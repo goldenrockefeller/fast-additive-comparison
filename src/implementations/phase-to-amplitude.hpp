@@ -58,6 +58,13 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
         }
     };
 
+    template <typename operand_type>
+    struct IdentityCalculator {
+        static inline operand_type cos(operand_type x) {
+            return x;
+        }
+    };
+
     template <typename sample_type, typename operand_type, std::size_t n_operands_per_block, typename CosineCalculatorT> 
     class SineOscillator{
         static_assert(sizeof(operand_type) >= sizeof(sample_type), "The operand type size must be the same size as sample type");
