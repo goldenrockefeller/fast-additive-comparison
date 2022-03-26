@@ -8,7 +8,7 @@
 #include <cmath>
 #include <iterator>
 
-#include "../common.hpp"
+#include "common.hpp"
 
 
 namespace goldenrockefeller{ namespace fast_additive_comparison{
@@ -58,7 +58,7 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
         }
     };
 
-    template <typename sample_type, typename operand_type, size_t n_operands_per_block, typename CosineCalculatorT> 
+    template <typename sample_type, typename operand_type, std::size_t n_operands_per_block, typename CosineCalculatorT> 
     class SineOscillator{
         static_assert(sizeof(operand_type) >= sizeof(sample_type), "The operand type size must be the same size as sample type");
         static_assert((sizeof(operand_type) % sizeof(sample_type)) == 0, "The operand type size must be a multiple of size as sample type");
@@ -72,7 +72,7 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
         static constexpr size_t n_samples_per_block = n_operands_per_block * sizeof(operand_type) / sizeof(sample_type);
 
         sample_type freq;
-        operand_type ampl;
+        operand_type ampl_operand;
 
         operand_type delta_phase_per_block;
 
@@ -82,51 +82,93 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
         vector_iterator_t osc_block_safe_end_it;
         vector_iterator_t osc_block_safe_begin_it;
 
-        static vector_t new_phase_block(sample_type freq, sample_type phase) {
-            vector_t phase_block(n_samples_per_block, 0.);
+        static inline void progress_phase_operand(sample_type* phase_ptr, operand_type& delta_phase_per_block) {
+            operand_type* phase_operand = reinterpret_cast<operand_type*>(phase_ptr);
+            *phase_operand += delta_phase_per_block;
+            *phase_operand = wrap_phase_bounded(*phase_operand);
+        }
 
-            auto delta_phase_per_sample = wrap_phase_offset(typed_constants<sample_type>::tau * freq);
-
-            // Fill the first phase operand
-            for (auto it = phase_block.begin(); it < phase_block.begin() + n_samples_per_operand; ++it){
-                *it = phase;
-                phase += delta_phase_per_sample;
-                phase = wrap_phase_bounded(phase);
+        template <size_t N>
+        struct ProgressPhaseLoop{
+            static inline void progress(vector_t& phase_block, operand_type& delta_phase_per_block) {
+                SineOscillator::progress_phase_operand(&phase_block[N * n_samples_per_operand], delta_phase_per_block);
+                ProgressPhaseLoop<N-1>::progress(phase_block, delta_phase_per_block);
             }
+        };
 
-            operand_type delta_phase_per_operand(wrap_phase_offset(typed_constants<sample_type>::tau * freq * n_samples_per_operand));
+        template <>
+        struct ProgressPhaseLoop<0> {
+            static inline void progress(vector_t& phase_block, operand_type& delta_phase_per_block) {
+                SineOscillator::progress_phase_operand(&phase_block[0], delta_phase_per_block);
+            }
+        };
 
-            // Fill the first phase block
-            operand_type* phase_operands = static_cast<operand_type*>(phase_block.data());
-            for (size_t i = 1; i < n_operands_per_block; ++i) {
-                phase_operands[i] = wrap_phase_bounded(phase_operands[i-1] + delta_phase_per_operand);
-            }  
-
-            return phase_block;
+        static inline void progress_osc_operand(sample_type* osc_ptr, sample_type* phase_ptr, operand_type& ampl_operand) {
+            operand_type* osc_operand = reinterpret_cast<operand_type*>(osc_ptr);
+            operand_type* phase_operand = reinterpret_cast<operand_type*>(phase_ptr);
+            *osc_operand  = ampl_operand * CosineCalculatorT::cos(*phase_operand);
         }
 
-        static vector_t new_osc_block(sample_type freq, sample_type ampl, sample_type phase) {
-            auto phase_block = new_phase_block(freq, phase);
-            operand_type ampl_operand(ampl);
+        template <size_t N>
+        struct ProgressOscLoop{
+            static inline void progress(vector_t& osc_block, vector_t& phase_block, operand_type& ampl_operand) {
+                SineOscillator::progress_osc_operand(&osc_block[(N+1) * n_samples_per_operand], &phase_block[N * n_samples_per_operand], ampl_operand);
+                ProgressOscLoop<N-1>::progress(osc_block, phase_block, ampl_operand);
+            }
+        };
 
-            vector_t osc_block(phase_block.size() + n_samples_per_operand, 0.);
-
-            auto osc_block_safe_begin_it = osc_block.begin() + n_samples_per_operand;
-            
-            operand_type* osc_operands = static_cast<operand_type*>(osc_block.data());
-            operand_type* phase_operands = static_cast<operand_type*>(phase_block.data());
-
-            for (size_t i = 0; i < n_operands_per_block; ++i) {
-                osc_operands[i + 1] = ampl_operand * CosineCalculatorT::cos(phase_operands[i]);
-            } 
-
-            return osc_block;
-        }
+        template <>
+        struct ProgressOscLoop<0> {
+            static inline void progress(vector_t& osc_block, vector_t& phase_block, operand_type& ampl_operand) {
+                SineOscillator::progress_osc_operand(&osc_block[n_samples_per_operand], &phase_block[0], ampl_operand);
+            }
+        };
     
         public:  
+            static vector_t new_phase_block(sample_type freq, sample_type phase) {
+                vector_t phase_block(n_samples_per_block, 0.);
+
+                auto delta_phase_per_sample = wrap_phase_offset(typed_constants<sample_type>::tau * freq);
+
+                // Fill the first phase operand
+                for (auto it = phase_block.begin(); it < phase_block.begin() + n_samples_per_operand; ++it){
+                    *it = phase;
+                    phase += delta_phase_per_sample;
+                    phase = wrap_phase_bounded(phase);
+                }
+
+                operand_type delta_phase_per_operand(wrap_phase_offset(typed_constants<sample_type>::tau * freq * n_samples_per_operand));
+
+                // Fill the first phase block
+                operand_type* phase_operands = static_cast<operand_type*>(phase_block.data());
+                for (size_t i = 1; i < n_operands_per_block; ++i) {
+                    phase_operands[i] = wrap_phase_bounded(phase_operands[i-1] + delta_phase_per_operand);
+                }  
+
+                return phase_block;
+            }
+
+            static vector_t new_osc_block(sample_type freq, sample_type ampl, sample_type phase) {
+                auto phase_block = new_phase_block(freq, phase);
+                operand_type ampl_operand(ampl);
+
+                vector_t osc_block(phase_block.size() + n_samples_per_operand, 0.);
+
+                auto osc_block_safe_begin_it = osc_block.begin() + n_samples_per_operand;
+                
+                operand_type* osc_operands = static_cast<operand_type*>(osc_block.data());
+                operand_type* phase_operands = static_cast<operand_type*>(phase_block.data());
+
+                for (size_t i = 0; i < n_operands_per_block; ++i) {
+                    osc_operands[i + 1] = ampl_operand * CosineCalculatorT::cos(phase_operands[i]);
+                } 
+
+                return osc_block;
+            }
+
             SineOscillator(sample_type freq, sample_type ampl, sample_type phase) :
                 freq(freq),
-                ampl(ampl),
+                ampl_operand(ampl),
                 delta_phase_per_block(wrap_phase_offset(typed_constants<sample_type>::tau * freq * this->n_samples_per_block)),
                 phase_block(SineOscillator::new_phase_block(freq, phase)),
                 osc_block(SineOscillator::new_osc_block(freq, ampl, phase)),
@@ -136,12 +178,7 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
             {}
 
             void progress_phase_block() {
-                operand_type* phase_operands = static_cast<operand_type*>(this->phase_block.data());
-
-                for (size_t i = 0; i < n_operands_per_block; ++i) {
-                    phase_operands[i] += this->delta_phase_per_block;
-                    phase_operands[i] = wrap_phase_bounded(phase_operands[i]);
-                } 
+                ProgressPhaseLoop<n_operands_per_block>::progress(this->phase_block, this->delta_phase_per_block);
             }
 
             void progress_osc_block(size_t sample_offset) {
@@ -150,14 +187,8 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
                 *osc_operands_first = *osc_operands_last;
 
                 this->progress_phase_block();
-
-                operand_type* osc_operands = static_cast<operand_type*>(osc_block.data());
-                operand_type* phase_operands = static_cast<operand_type*>(phase_block.data());
-
-                for (size_t i = 0; i < n_operands_per_block; ++i) {
-                    osc_operands[i + 1] = this->ampl * CosineCalculatorT::cos(phase_operands[i]);
-                } 
-                
+                ProgressOscLoop<n_operands_per_block>::progress(this->osc_block, this->phase_block, this->ampl_operand);
+                                
                 this->osc_block_it = this->osc_block.begin() + sample_offset;
             }
 
