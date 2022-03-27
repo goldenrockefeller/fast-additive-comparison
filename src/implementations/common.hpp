@@ -18,6 +18,12 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
         static constexpr T inv_tau = T(0.1591549430918953357688837633725143620345L);
     };
 
+    // template <typename T>
+    // struct typed_constants{
+    //     static T pi; 
+    //     static T tau;
+    //     static T inv_tau;
+    // };
 
     // template <>
     // struct typed_constants<float> : typed_constants_numeric<float> {};
@@ -40,7 +46,7 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
         
         using k = typed_constants<T>;
         /* Wrap phase between -pi, and pi, but raw phase must be between -pi and 3 * pi */
-        return phase - k::tau * (phase > k::pi);
+        return phase - T(phase > k::pi) * k::tau;
     }   
 
     template <typename T>
@@ -52,23 +58,23 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
     } 
 
     template <typename T>
-    T cos(T& x) {
-        return std::cos(x);
-    }
+    inline T cos(const T& x);
+
+    using std::cos;
 
     template <typename sample_type, typename operand_type>
-    inline void load(sample_type* ptr, operand_type& operand);
+    inline void load(const sample_type* ptr, operand_type& operand);
 
     template <typename sample_type>
-    inline void load(sample_type* ptr, sample_type& operand) {
+    inline void load(const sample_type* ptr, sample_type& operand) {
         operand = *ptr;
     }
 
-    template <typename sample_type, typename operand_type>
-    inline void store(sample_type* ptr, operand_type& operand);
+    // template <typename sample_type, typename operand_type>
+    // inline void store(sample_type* ptr, operand_type& operand);
 
     template <typename sample_type>
-    inline void store(sample_type* ptr, sample_type& operand) {
+    inline void store(sample_type* ptr, const sample_type& operand) {
         *ptr = operand;
     }
 
