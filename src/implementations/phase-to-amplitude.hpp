@@ -46,13 +46,13 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
 
         static constexpr size_t n_samples_per_operand = sizeof(operand_type) / sizeof(sample_type);
 
-        static inline operand_type cos(operand_type x) {
+        static inline operand_type cos(operand_type& x) {
             operand_type y;
             sample_type* x_ptr = reinterpret_cast<sample_type*>(&x);
             sample_type* y_ptr = reinterpret_cast<sample_type*>(&y);
 
             for (size_t i = 0; i < n_samples_per_operand; i++) {
-                y_ptr[i] = std::cos(x_ptr[i]);
+                y_ptr[i] = cos(x_ptr[i]);
             }
             return y;
         }
@@ -60,7 +60,7 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
 
     template <typename operand_type>
     struct IdentityCalculator {
-        static inline operand_type cos(operand_type x) {
+        static inline operand_type cos(operand_type& x) {
             return x;
         }
     };
@@ -90,9 +90,11 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
         vector_iterator_t osc_block_safe_begin_it;
 
         static inline void progress_phase_operand(sample_type* phase_ptr, operand_type& delta_phase_per_block) {
-            operand_type* phase_operand = reinterpret_cast<operand_type*>(phase_ptr);
-            *phase_operand += delta_phase_per_block;
-            *phase_operand = wrap_phase_bounded(*phase_operand);
+            operand_type phase_operand;
+            load(phase_ptr, phase_operand);
+            phase_operand += delta_phase_per_block;
+            phase_operand = wrap_phase_bounded(phase_operand);
+            store(phase_ptr, phase_operand);
         }
 
         template <size_t N>
@@ -111,9 +113,11 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
         };
 
         static inline void progress_osc_operand(sample_type* osc_ptr, sample_type* phase_ptr, operand_type& ampl_operand) {
-            operand_type* osc_operand = reinterpret_cast<operand_type*>(osc_ptr);
-            operand_type* phase_operand = reinterpret_cast<operand_type*>(phase_ptr);
-            *osc_operand  = ampl_operand * CosineCalculatorT::cos(*phase_operand);
+            operand_type osc_operand;
+            operand_type phase_operand;
+            load(phase_ptr, phase_operand); 
+            osc_operand  = ampl_operand * CosineCalculatorT::cos(phase_operand);
+            store(osc_ptr, osc_operand);
         }
 
         template <size_t N>
@@ -147,9 +151,14 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
                 operand_type delta_phase_per_operand(wrap_phase_offset(typed_constants<sample_type>::tau * freq * n_samples_per_operand));
 
                 // Fill the first phase block
-                operand_type* phase_operands = static_cast<operand_type*>(phase_block.data());
-                for (size_t i = 1; i < n_operands_per_block; ++i) {
-                    phase_operands[i] = wrap_phase_bounded(phase_operands[i-1] + delta_phase_per_operand);
+                operand_type prev_phase_operand;
+                load(phase_block.data(), prev_phase_operand);
+                for (size_t i = n_samples_per_operand; i < n_samples_per_block; i += n_samples_per_operand) {
+                    operand_type phase_operand;
+                    load(&phase_block[i], phase_operand);
+                    phase_operand = wrap_phase_bounded(prev_phase_operand + delta_phase_per_operand);
+                    prev_phase_operand = phase_operand;
+                    store(&phase_block[i], phase_operand);
                 }  
 
                 return phase_block;
@@ -159,16 +168,9 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
                 auto phase_block = new_phase_block(freq, phase);
                 operand_type ampl_operand(ampl);
 
-                vector_t osc_block(phase_block.size() + n_samples_per_operand, 0.);
+                vector_t osc_block(phase_block.size() + n_samples_per_operand, 0.);              
 
-                auto osc_block_safe_begin_it = osc_block.begin() + n_samples_per_operand;
-                
-                operand_type* osc_operands = static_cast<operand_type*>(osc_block.data());
-                operand_type* phase_operands = static_cast<operand_type*>(phase_block.data());
-
-                for (size_t i = 0; i < n_operands_per_block; ++i) {
-                    osc_operands[i + 1] = ampl_operand * CosineCalculatorT::cos(phase_operands[i]);
-                } 
+                ProgressOscLoop<n_operands_per_block>::progress(osc_block, phase_block, ampl_operand);
 
                 return osc_block;
             }
@@ -189,9 +191,9 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
             }
 
             void progress_osc_block(size_t sample_offset) {
-                operand_type* osc_operands_last = static_cast<operand_type*>(&(*this->osc_block_safe_end_it));
-                operand_type* osc_operands_first = static_cast<operand_type*>(this->osc_block.data());
-                *osc_operands_first = *osc_operands_last;
+                operand_type osc_operand_last;
+                load(&(*this->osc_block_safe_end_it), osc_operand_last);
+                store(this->osc_block.data(), osc_operand_last);
 
                 this->progress_phase_block();
                 ProgressOscLoop<n_operands_per_block>::progress(this->osc_block, this->phase_block, this->ampl_operand);
@@ -218,7 +220,8 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
 
                 else { // it is safe to vectorize
                     auto signal_safe_end_it = signal_end_it - this->n_samples_per_operand;
-                    operand_type signal_operands_last = static_cast<operand_type>(*signal_safe_end_it);
+                    operand_type signal_operand_last;
+                    load(&(*signal_safe_end_it), signal_operand_last);
 
                     auto signal_it = signal_begin_it;
                     for (; signal_it < signal_safe_end_it; signal_it += this->n_samples_per_operand) {
@@ -227,24 +230,32 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
                             this->progress_osc_block(size_t(this->osc_block_it - this->osc_block_safe_end_it));
                         }
                         
-                        operand_type* signal_operands = static_cast<operand_type*>(&(*signal_it));
-                        operand_type* osc_operands = static_cast<operand_type*>(&(*this->osc_block_it));
+                        operand_type signal_operand;
+                        operand_type osc_operand;
+                        load(&(*signal_it), signal_operand);
+                        load(&(*this->osc_block_it), osc_operand);
 
-                        *signal_operands += *osc_operands;
-                        
+                        signal_operand += osc_operand;
+
+                        store(&(*signal_it), signal_operand);
+
                         this->osc_block_it += this->n_samples_per_operand;
                     }
 
+                    this->osc_block_it -= signal_it - signal_safe_end_it;
 
                     if (this->osc_block_it >  this->osc_block_safe_end_it) {
                         this->progress_osc_block(size_t(this->osc_block_it - this->osc_block_safe_end_it));
                     }
 
-                    operand_type* osc_operands = static_cast<operand_type*>(&(*this->osc_block_it));
-                    operand_type* signal_operands = static_cast<operand_type*>(&(*signal_safe_end_it));
-                    *signal_operands = signal_operands_last + *osc_operands;
+                    operand_type osc_operand;
+                    load(&(*this->osc_block_it), osc_operand);
 
-                    this->osc_block_it += this->n_samples_per_operand - (signal_it - signal_safe_end_it);
+                    signal_operand_last = signal_operand_last + osc_operand;
+
+                    store(&(*signal_safe_end_it), signal_operand_last);
+
+                    this->osc_block_it += this->n_samples_per_operand;
                 }
             }
         // public

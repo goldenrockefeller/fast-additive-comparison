@@ -1,6 +1,8 @@
 #ifndef GOLDENROCEKEFELLER_FAST_ADDITIVE_COMPARISON_CONSTANTS_HPP
 #define GOLDENROCEKEFELLER_FAST_ADDITIVE_COMPARISON_CONSTANTS_HPP
 
+#include <cmath>
+
 namespace goldenrockefeller{ namespace fast_additive_comparison{
     // template <typename T>
     // struct typed_constants{
@@ -48,6 +50,28 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
         /* Wrap phase between 0, and 2 * pi, but raw phase must be between -pi and 3 * pi */
         return phase - floor(phase * k::inv_tau) * k::tau;
     } 
+
+    template <typename T>
+    T cos(T& x) {
+        return std::cos(x);
+    }
+
+    template <typename sample_type, typename operand_type>
+    inline void load(sample_type* ptr, operand_type& operand);
+
+    template <typename sample_type>
+    inline void load(sample_type* ptr, sample_type& operand) {
+        operand = *ptr;
+    }
+
+    template <typename sample_type, typename operand_type>
+    inline void store(sample_type* ptr, operand_type& operand);
+
+    template <typename sample_type>
+    inline void store(sample_type* ptr, sample_type& operand) {
+        *ptr = operand;
+    }
+
 }}
 
 #endif
