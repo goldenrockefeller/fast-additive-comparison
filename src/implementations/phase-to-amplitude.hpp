@@ -2,7 +2,6 @@
 #define GOLDENROCEKEFELLER_FAST_ADDITIVE_IMPLEMENTATIONS_PHASE_TO_AMPLITUDE_HPP
 #include <cstddef>
 #include <vector>
-#include <assert.h>
 
 #include <cstddef>
 #include <vector>
@@ -124,9 +123,6 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
         template <size_t N>
         struct ProgressOscLoop{
             static inline void progress(vector_t& osc_block, const vector_t& phase_block, const operand_type& ampl_operand) {
-                // assert(false);
-                assert(N * n_samples_per_operand < osc_block.size());
-                assert((N+1) * n_samples_per_operand <= osc_block.size());
                 SineOscillator::progress_osc_operand(&osc_block[N * n_samples_per_operand], &phase_block[(N-1) * n_samples_per_operand], ampl_operand);
                 ProgressOscLoop<N-1>::progress(osc_block, phase_block, ampl_operand);
             }
