@@ -29,10 +29,10 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
                 phase(phase)
             {}
             void progress_and_add(vector_iterator_t signal_begin_it, vector_iterator_t signal_end_it) {
-                using k = typed_constants<float>;
+                
                 for (auto signal_it = signal_begin_it; signal_it < signal_end_it; ++signal_it) {
                     *signal_it += ampl * cos(this->phase);
-                    this->phase += k::tau * this->freq;
+                    this->phase += tau<sample_type>() * this->freq;
                     this->phase = wrap_phase_bounded(this->phase);
                 }
             }
@@ -140,7 +140,7 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
 
                 vector_t phase_block(n_samples_per_block, 0.);
 
-                auto delta_phase_per_sample = wrap_phase_offset(typed_constants<sample_type>::tau * freq);
+                auto delta_phase_per_sample = wrap_phase_offset(tau<sample_type>() * freq);
 
                 // Fill the first phase operand
                 for (auto it = phase_block.begin(); it < phase_block.begin() + n_samples_per_operand; ++it){
@@ -149,7 +149,7 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
                     phase = wrap_phase_bounded(phase);
                 }
 
-                operand_type delta_phase_per_operand(wrap_phase_offset(typed_constants<sample_type>::tau * freq * n_samples_per_operand));
+                operand_type delta_phase_per_operand(wrap_phase_offset(tau<sample_type>() * freq * n_samples_per_operand));
 
                 // Fill the first phase block
                 operand_type prev_phase_operand;
@@ -179,7 +179,7 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
             SineOscillator(sample_type freq, sample_type ampl, sample_type phase) :
                 freq(freq),
                 ampl_operand(ampl),
-                delta_phase_per_block(wrap_phase_offset(typed_constants<sample_type>::tau * freq * this->n_samples_per_block)),
+                delta_phase_per_block(wrap_phase_offset(tau<sample_type>() * freq * this->n_samples_per_block)),
                 phase_block(SineOscillator::new_phase_block(freq, phase)),
                 osc_block(SineOscillator::new_osc_block(freq, ampl, phase)),
                 osc_block_safe_end_it(osc_block.begin() + n_samples_per_block),
