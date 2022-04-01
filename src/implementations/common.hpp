@@ -2,6 +2,7 @@
 #define GOLDENROCEKEFELLER_FAST_ADDITIVE_COMPARISON_CONSTANTS_HPP
 
 #include <cmath>
+#include "xsimd/xsimd.hpp"
 
 namespace goldenrockefeller{ namespace fast_additive_comparison{
     // template <typename T>
@@ -79,13 +80,35 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
     }
 
     template <typename sample_type, typename operand_type>
-    inline void store(sample_type* ptr, operand_type& operand);
+    inline void store(sample_type* ptr, const operand_type& operand);
+
 
     template <typename sample_type>
     inline void store(sample_type* ptr, const sample_type& operand) {
         *ptr = operand;
     }
 
+    
+    template<>
+	inline void load<float, xsimd::batch<float, xsimd::avx>>(const float* ptr, xsimd::batch<float, xsimd::avx>& operand) {
+		operand = xsimd::batch<float, xsimd::avx>::load_unaligned(ptr);
+	}
+
+	template<>
+	inline void store<float, xsimd::batch<float, xsimd::avx>>(float* ptr, const xsimd::batch<float, xsimd::avx>& operand) {
+		operand.store_unaligned(ptr);
+	}
+
+        
+    template<>
+	inline void load<double, xsimd::batch<double, xsimd::avx>>(const double* ptr, xsimd::batch<double, xsimd::avx>& operand) {
+		operand = xsimd::batch<double, xsimd::avx>::load_unaligned(ptr);
+	}
+
+	template<>
+	inline void store<double, xsimd::batch<double, xsimd::avx>>(double* ptr, const xsimd::batch<double, xsimd::avx>& operand) {
+		operand.store_unaligned(ptr);
+	}
 }}
 
 #endif
