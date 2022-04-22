@@ -26,7 +26,7 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
         sample_type phase;
 
         public:
-            SimpleExactSineOscillator() : SimpleExactSineOscillator(0., 0., 0.) {}
+            SimpleExactSineOscillator() : SimpleExactSineOscillator(sample_type(0), sample_type(0), sample_type(0)) {}
 
             SimpleExactSineOscillator(sample_type freq, sample_type ampl, sample_type phase) :
                 freq(wrap_phase_offset(freq)),
