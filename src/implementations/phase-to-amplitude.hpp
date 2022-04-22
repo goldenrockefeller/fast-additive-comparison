@@ -19,7 +19,6 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
     class SimpleExactSineOscillator {
         using size_t = std::size_t;
         using vector_t = typename std::vector<sample_type>;
-        using vector_iterator_t = typename std::vector<sample_type>::iterator;
 
         sample_type freq;
         sample_type ampl;
@@ -40,7 +39,8 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
                 this->phase = phase;
             }
 
-            void progress_and_add(vector_iterator_t signal_begin_it, vector_iterator_t signal_end_it) {
+            template<typename iterator_t>
+            void progress_and_add(iterator_t signal_begin_it, iterator_t signal_end_it) {
                 
                 for (auto signal_it = signal_begin_it; signal_it < signal_end_it; ++signal_it) {
                     *signal_it += ampl * cos(this->phase);
@@ -262,7 +262,8 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
                 this->osc_block_it = this->osc_block.begin() + sample_offset;
             }
 
-            void progress_and_add(vector_iterator_t signal_begin_it, vector_iterator_t signal_end_it)    {
+            template<typename iterator_t>
+            void progress_and_add(iterator_t signal_begin_it, iterator_t signal_end_it)    {
                 
                 if (signal_end_it < signal_begin_it) {
                     return;
