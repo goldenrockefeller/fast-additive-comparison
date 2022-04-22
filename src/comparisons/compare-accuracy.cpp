@@ -261,8 +261,8 @@ int main() {
 
     auto result = oscillator_analysis<gfac::SineOscillator<double, double_avx_t, 4,DoubleCosCalc>, double>(freqs, 50000);
 
-    cout << "SNR: " << result.worst_snr_record.snr_db << " at " << result.worst_snr_record.freq << "\n"; 
-    cout << "Absolute Gain: " << result.worst_abs_gain_record.abs_gain_db << " at " << result.worst_abs_gain_record.freq << "\n"; 
+    cout << "SNR (db): " << result.worst_snr_record.snr_db << " at " << result.worst_snr_record.freq << " cycles/sample \n"; 
+    cout << "Absolute Gain (db): " << result.worst_abs_gain_record.abs_gain_db << " at " << result.worst_abs_gain_record.freq << "cycles/sample \n"; 
 
     return 0;
 }
