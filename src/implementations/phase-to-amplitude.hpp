@@ -18,7 +18,7 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
     template <typename sample_type>
     class SimpleExactSineOscillator {
         using size_t = std::size_t;
-        using vector_t = typename std::vector<sample_type>;
+        using vector_type = typename std::vector<sample_type>;
 
         sample_type freq;
         sample_type ampl;
@@ -39,8 +39,8 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
                 this->phase = phase;
             }
 
-            template<typename iterator_t>
-            void progress_and_add(iterator_t signal_begin_it, iterator_t signal_end_it) {
+            template<typename iterator_type>
+            void progress_and_add(iterator_type signal_begin_it, iterator_type signal_end_it) {
                 
                 for (auto signal_it = signal_begin_it; signal_it < signal_end_it; ++signal_it) {
                     *signal_it += ampl * cos(this->phase);
@@ -84,8 +84,8 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
         static_assert(n_operands_per_block >= 1, "The operand block length must be positive");
 
         using size_t = std::size_t;
-        using vector_t = typename std::vector<sample_type>;
-        using vector_iterator_t = typename std::vector<sample_type>::iterator;
+        using vector_type = typename std::vector<sample_type>;
+        using vector_iterator_type = typename std::vector<sample_type>::iterator;
 
         static constexpr size_t n_samples_per_operand = sizeof(operand_type) / sizeof(sample_type);
         static constexpr size_t n_samples_per_block = n_operands_per_block * sizeof(operand_type) / sizeof(sample_type);
@@ -95,11 +95,11 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
 
         operand_type delta_phase_per_block;
 
-        vector_t osc_block;
-        vector_t phase_block;
-        vector_iterator_t osc_block_it;
-        vector_iterator_t osc_block_safe_end_it;
-        vector_iterator_t osc_block_safe_begin_it;
+        vector_type osc_block;
+        vector_type phase_block;
+        vector_iterator_type osc_block_it;
+        vector_iterator_type osc_block_safe_end_it;
+        vector_iterator_type osc_block_safe_begin_it;
 
         static inline void progress_phase_operand(sample_type* phase_ptr, const operand_type& delta_phase_per_block) {
             operand_type phase_operand;
@@ -111,7 +111,7 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
 
         template <size_t N>
         struct ProgressPhaseLoop{
-            static inline void progress(vector_t& phase_block, const operand_type& delta_phase_per_block) {
+            static inline void progress(vector_type& phase_block, const operand_type& delta_phase_per_block) {
                 SineOscillator::progress_phase_operand(&phase_block[(N-1) * n_samples_per_operand], delta_phase_per_block);
                 ProgressPhaseLoop<N-1>::progress(phase_block, delta_phase_per_block);
             }
@@ -119,7 +119,7 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
 
         template <>
         struct ProgressPhaseLoop<1> {
-            static inline void progress(vector_t& phase_block, const operand_type& delta_phase_per_block) {
+            static inline void progress(vector_type& phase_block, const operand_type& delta_phase_per_block) {
                 SineOscillator::progress_phase_operand(&phase_block[0], delta_phase_per_block);
             }
         };
@@ -134,7 +134,7 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
 
         template <size_t N>
         struct UpdateOscLoop{
-            static inline void update(vector_t& osc_block, const vector_t& phase_block, const operand_type& ampl_operand) {
+            static inline void update(vector_type& osc_block, const vector_type& phase_block, const operand_type& ampl_operand) {
                 SineOscillator::update_osc_operand(&osc_block[N * n_samples_per_operand], &phase_block[(N-1) * n_samples_per_operand], ampl_operand);
                 UpdateOscLoop<N-1>::update(osc_block, phase_block, ampl_operand);
             }
@@ -142,13 +142,13 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
 
         template <>
         struct UpdateOscLoop<1> {
-            static inline void update(vector_t& osc_block, const vector_t& phase_block, const operand_type& ampl_operand) {
+            static inline void update(vector_type& osc_block, const vector_type& phase_block, const operand_type& ampl_operand) {
                 SineOscillator::update_osc_operand(&osc_block[n_samples_per_operand], &phase_block[0], ampl_operand);
             }
         };
     
         public: 
-            static void init_phase_block(vector_t& phase_block, sample_type freq, sample_type phase) {
+            static void init_phase_block(vector_type& phase_block, sample_type freq, sample_type phase) {
                 if (phase_block.size() !=  n_samples_per_block) {
                     std::ostringstream msg;
                     msg << "The phase block size "
@@ -182,7 +182,7 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
 
             }
             
-            // static void update_osc_block(vector_t& osc_block, const vector_t& phase_block, sample_type ampl){
+            // static void update_osc_block(vector_type& osc_block, const vector_type& phase_block, sample_type ampl){
             //     if (phase_block.size() !=  n_samples_per_block) {
             //         std::ostringstream msg;
             //         msg << "The phase block size "
@@ -204,16 +204,16 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
             //     }
             // }
 
-            static vector_t new_phase_block(sample_type freq, sample_type phase) {
+            static vector_type new_phase_block(sample_type freq, sample_type phase) {
 
-                vector_t phase_block(n_samples_per_block, 0.);                
+                vector_type phase_block(n_samples_per_block, 0.);                
                 SineOscillator::init_phase_block(phase_block, freq, phase);
                 return phase_block;
             }
 
-            static vector_t new_osc_block(sample_type freq, sample_type ampl, sample_type phase) {
+            static vector_type new_osc_block(sample_type freq, sample_type ampl, sample_type phase) {
                 auto phase_block = new_phase_block(freq, phase);
-                vector_t osc_block(phase_block.size() + n_samples_per_operand, 0.);      
+                vector_type osc_block(phase_block.size() + n_samples_per_operand, 0.);      
 
                 operand_type ampl_operand(ampl);
 
@@ -262,8 +262,8 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
                 this->osc_block_it = this->osc_block.begin() + sample_offset;
             }
 
-            template<typename iterator_t>
-            void progress_and_add(iterator_t signal_begin_it, iterator_t signal_end_it)    {
+            template<typename iterator_type>
+            void progress_and_add(iterator_type signal_begin_it, iterator_type signal_end_it)    {
                 
                 if (signal_end_it < signal_begin_it) {
                     return;
