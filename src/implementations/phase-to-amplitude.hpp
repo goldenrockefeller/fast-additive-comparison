@@ -2,12 +2,8 @@
 #define GOLDENROCEKEFELLER_FAST_ADDITIVE_IMPLEMENTATIONS_PHASE_TO_AMPLITUDE_HPP
 #include <cstddef>
 #include <vector>
-
-#include <cstddef>
-#include <vector>
 #include <cmath>
 #include <iterator>
-
 #include <sstream>
 #include <stdexcept>
 
@@ -147,7 +143,8 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
             }
         };
     
-        public: 
+        public:
+
             static void init_phase_block(vector_type& phase_block, sample_type freq, sample_type phase) {
                 if (phase_block.size() !=  n_samples_per_block) {
                     std::ostringstream msg;
