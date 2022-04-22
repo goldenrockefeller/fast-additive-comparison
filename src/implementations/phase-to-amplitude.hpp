@@ -21,6 +21,8 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
         sample_type phase;
 
         public:
+            typedef sample_type sample_type;
+
             SimpleExactSineOscillator() : SimpleExactSineOscillator(sample_type(0), sample_type(0), sample_type(0)) {}
 
             SimpleExactSineOscillator(sample_type freq, sample_type ampl, sample_type phase) :
@@ -144,6 +146,7 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
         };
     
         public:
+            typedef sample_type sample_type;
 
             static void init_phase_block(vector_type& phase_block, sample_type freq, sample_type phase) {
                 if (phase_block.size() !=  n_samples_per_block) {
