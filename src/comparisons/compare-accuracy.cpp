@@ -207,8 +207,10 @@ AnalysisResult signal_analysis(const vector<double>& signal, double freq){
 
     // return result;
 
-template<typename OscillatorT, typename sample_type>
+template<typename OscillatorT>
 AnalysisResult oscillator_analysis(const vector<double>& freqs, size_t analysis_len) {
+    using sample_type = typename OscillatorT::sample_type;
+
     AnalysisResult result;
     vector<AnalysisResult> results_by_freqs;
 
@@ -259,7 +261,7 @@ int main() {
         freqs[i] = 0.45 / exp2(double(i));
     }
 
-    auto result = oscillator_analysis<gfac::SineOscillator<double, double_avx_t, 4,DoubleCosCalc>, double>(freqs, 50000);
+    auto result = oscillator_analysis<gfac::SineOscillator<double, double_avx_t, 4,DoubleCosCalc>>(freqs, 50000);
 
     cout << "SNR (db): " << result.worst_snr_record.snr_db << " at " << result.worst_snr_record.freq << " cycles/sample \n"; 
     cout << "Absolute Gain (db): " << result.worst_abs_gain_record.abs_gain_db << " at " << result.worst_abs_gain_record.freq << "cycles/sample \n"; 
