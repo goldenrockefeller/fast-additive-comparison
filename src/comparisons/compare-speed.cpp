@@ -26,9 +26,10 @@ using double_avx_t = xs::batch<double, xs::avx>;
 using gfac::OscillatorBank;
 using gfac::SimpleExactSineOscillator;
 using gfac::SineOscillator;
-using FloatCosCalc = gfac::ExactCosineCalculator<float, float_avx_t>;
-using DoubleCosCalc = gfac::ExactCosineCalculator<double, double_avx_t>;
+using FloatCosCalc = gfac::ExactCosineCalculator<float>;
+using DoubleCosCalc = gfac::ExactCosineCalculator<double>;
 using gfac::ApproxCos14Calculator;
+using gfac::ApproxCos10Calculator;
 
 
 template <typename GeneratorT>
@@ -69,17 +70,39 @@ void do_all_regular_benches(size_t chunk_size, size_t n_oscs) {
         &bench, "Phase-to-Amplitude Exact Double-AVX-2", chunk_size, n_oscs
     );
 
-    do_regular_bench<OscillatorBank<SineOscillator<double, double_avx_t, 2, ApproxCos14Calculator<double_avx_t>>>>(
-        &bench, "Phase-to-Amplitude Approx 14-deg Double-AVX-2", chunk_size, n_oscs
+    do_regular_bench<OscillatorBank<SineOscillator<double, double_avx_t, 4, ApproxCos14Calculator>>>(
+        &bench, "Phase-to-Amplitude Approx 14-deg Double-AVX-4", chunk_size, n_oscs
     );
+
+    do_regular_bench<OscillatorBank<SineOscillator<double, double, 1, ApproxCos10Calculator>>>(
+        &bench, "Phase-to-Amplitude Approx 10-deg Double-1", chunk_size, n_oscs
+    );
+
+    do_regular_bench<OscillatorBank<SineOscillator<double, double, 16, ApproxCos10Calculator>>>(
+        &bench, "Phase-to-Amplitude Approx 10-deg Double-16", chunk_size, n_oscs
+    );
+
+
+    do_regular_bench<OscillatorBank<SineOscillator<double, double_avx_t, 1, ApproxCos10Calculator>>>(
+        &bench, "Phase-to-Amplitude Approx 10-deg Double-AVX-1", chunk_size, n_oscs
+    );
+
+    do_regular_bench<OscillatorBank<SineOscillator<double, double_avx_t, 4, ApproxCos10Calculator>>>(
+        &bench, "Phase-to-Amplitude Approx 10-deg Double-AVX-4", chunk_size, n_oscs
+    );
+
+    do_regular_bench<OscillatorBank<SineOscillator<double, double_avx_t, 16, ApproxCos10Calculator>>>(
+        &bench, "Phase-to-Amplitude Approx 10-deg Double-AVX-16", chunk_size, n_oscs
+    );
+
 }
  
 int main() {
     cout << "Hello World!\n";  
 
     do_all_regular_benches(50000, 1);
-    do_all_regular_benches(1024, 1);
-    do_all_regular_benches(1, 1);
+    // do_all_regular_benches(1024, 1);
+    // do_all_regular_benches(1, 1);
   
     return 0;
 }

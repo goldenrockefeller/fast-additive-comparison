@@ -49,14 +49,16 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
         // end public
     };
 
-    template <typename sample_type, typename operand_type>
+    template <typename sample_type>
     struct ExactCosineCalculator {
-        static_assert(sizeof(operand_type) >= sizeof(sample_type), "The operand type size must be the same size as sample type");
-        static_assert((sizeof(operand_type) % sizeof(sample_type)) == 0, "The operand type size must be a multiple of size as sample type");
 
-        static constexpr size_t n_samples_per_operand = sizeof(operand_type) / sizeof(sample_type);
-
+        template <typename operand_type>
         static inline operand_type cos(const operand_type& x) {
+            static_assert(sizeof(operand_type) >= sizeof(sample_type), "The operand type size must be the same size as sample type");
+            static_assert((sizeof(operand_type) % sizeof(sample_type)) == 0, "The operand type size must be a multiple of size as sample type");
+
+            static constexpr size_t n_samples_per_operand = sizeof(operand_type) / sizeof(sample_type);
+
             operand_type y;
             const sample_type* x_ptr = reinterpret_cast<const sample_type*>(&x);
             sample_type* y_ptr = reinterpret_cast<sample_type*>(&y);
@@ -68,15 +70,24 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
         }
     };
 
-    template <typename operand_type>
+    
     struct ApproxCos14Calculator {
+        template <typename operand_type>
         static inline operand_type cos(const operand_type& x) {
             return approx_cos_deg_14(x);
         }
     };
 
-    template <typename operand_type>
+    struct ApproxCos10Calculator {
+        template <typename operand_type>
+        static inline operand_type cos(const operand_type& x) {
+            return approx_cos_deg_10(x);
+        }
+    };
+
+    
     struct IdentityCalculator {
+        template <typename operand_type>
         static inline operand_type cos(const operand_type& x) {
             return x;
         }
