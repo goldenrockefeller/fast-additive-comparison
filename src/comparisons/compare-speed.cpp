@@ -28,10 +28,11 @@ using gfac::SimpleExactSineOscillator;
 using gfac::SineOscillator;
 using FloatCosCalc = gfac::ExactCosineCalculator<float, float_avx_t>;
 using DoubleCosCalc = gfac::ExactCosineCalculator<double, double_avx_t>;
+using gfac::ApproxCos14Calculator;
 
 
 template <typename GeneratorT>
-void do_inharmonic_bench(ankerl::nanobench::Bench* bench, char const* name, size_t chunk_size, size_t n_oscs) {
+void do_regular_bench(ankerl::nanobench::Bench* bench, char const* name, size_t chunk_size, size_t n_oscs) {
     using sample_type = typename GeneratorT::sample_type;
 
     GeneratorT gen(n_oscs);
@@ -49,32 +50,36 @@ void do_inharmonic_bench(ankerl::nanobench::Bench* bench, char const* name, size
     });
 }
 
-void do_all_inharmonic_benches(size_t chunk_size, size_t n_oscs) {
+void do_all_regular_benches(size_t chunk_size, size_t n_oscs) {
     ankerl::nanobench::Bench bench;
 
     ostringstream title_stream;
-    title_stream << "All Inharmonic Bench. Chunck Size: " << chunk_size << "; Num of Oscs: " << n_oscs;
+    title_stream << "All Regular Bench. Chunck Size: " << chunk_size << "; Num of Oscs: " << n_oscs;
     bench.title(title_stream.str());
 
-    do_inharmonic_bench<OscillatorBank<SimpleExactSineOscillator<double>>>(
+    do_regular_bench<OscillatorBank<SimpleExactSineOscillator<double>>>(
         &bench, "Phase-to-Amplitude Simple Double", chunk_size, n_oscs
     );
 
-    do_inharmonic_bench<OscillatorBank<SineOscillator<double, double_avx_t, 1,DoubleCosCalc>>>(
+    do_regular_bench<OscillatorBank<SineOscillator<double, double_avx_t, 1,DoubleCosCalc>>>(
         &bench, "Phase-to-Amplitude Exact Double-AVX-1", chunk_size, n_oscs
     );
 
-    do_inharmonic_bench<OscillatorBank<SineOscillator<double, double_avx_t, 2,DoubleCosCalc>>>(
+    do_regular_bench<OscillatorBank<SineOscillator<double, double_avx_t, 2,DoubleCosCalc>>>(
         &bench, "Phase-to-Amplitude Exact Double-AVX-2", chunk_size, n_oscs
+    );
+
+    do_regular_bench<OscillatorBank<SineOscillator<double, double_avx_t, 2, ApproxCos14Calculator<double_avx_t>>>>(
+        &bench, "Phase-to-Amplitude Approx 14-deg Double-AVX-2", chunk_size, n_oscs
     );
 }
  
 int main() {
     cout << "Hello World!\n";  
 
-    do_all_inharmonic_benches(50000, 1);
-    do_all_inharmonic_benches(1024, 1);
-    do_all_inharmonic_benches(1, 1);
+    do_all_regular_benches(50000, 1);
+    do_all_regular_benches(1024, 1);
+    do_all_regular_benches(1, 1);
   
     return 0;
 }
