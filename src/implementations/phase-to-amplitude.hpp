@@ -69,6 +69,13 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
     };
 
     template <typename operand_type>
+    struct ApproxCos14Calculator {
+        static inline operand_type cos(const operand_type& x) {
+            return approx_cos_deg_14(x);
+        }
+    };
+
+    template <typename operand_type>
     struct IdentityCalculator {
         static inline operand_type cos(const operand_type& x) {
             return x;

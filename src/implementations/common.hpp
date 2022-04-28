@@ -109,6 +109,33 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
 	inline void store<double, xsimd::batch<double, xsimd::avx>>(double* ptr, const xsimd::batch<double, xsimd::avx>& operand) {
 		operand.store_unaligned(ptr);
 	}
+
+    template <typename operand_type>
+    inline operand_type approx_cos_deg_14(const operand_type& x) {
+        // TODO replace with FMA
+
+        // ((C0 + C2 x2) + (C4 + c6 x2) x4) + ((C8 + C10 x2) + (C12 + c14 x2) x4) x8
+
+        const operand_type c0 = operand_type(double(0x1.ffffffff470fdp-1));
+        const operand_type c2 = operand_type(double(-0x1.ffffffec1c40dp-2));
+        const operand_type c4 = operand_type(double(0x1.555553f050eb2p-5));
+        const operand_type c6 = operand_type(double(-0x1.6c169b776ec06p-10));
+        const operand_type c8 = operand_type(double(0x1.a0160ea01af9bp-16));
+        const operand_type c10 = operand_type(double(-0x1.27abf550a036ap-22));
+        const operand_type c12 = operand_type(double(0x1.1b5c0b8055789p-29));
+        const operand_type c14 = operand_type(double(-0x1.577f9d3aa99cep-37));
+
+        auto x2 = x * x;
+        auto x4 = x2 * x2;
+        auto v_c0_c2 = c0 + c2 * x2;
+        auto v_c4_c6 = c4 + c6 * x2;
+        auto x8 = x4 * x4;
+        auto v_c0_c6 = v_c0_c2 + v_c4_c6 * x4;
+        auto v_c8_c10 = c8 + c10 * x2;
+        auto v_c12_c14 = c12 + c14 * x2;
+        auto v_c8_c14 = v_c8_c10 + v_c12_c14 * x4;
+        return v_c0_c6 + v_c8_c14 * x8;
+    }
 }}
 
 #endif
