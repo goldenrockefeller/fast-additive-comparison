@@ -30,6 +30,10 @@ using FloatCosCalc = gfac::ExactCosineCalculator<float>;
 using DoubleCosCalc = gfac::ExactCosineCalculator<double>;
 using gfac::ApproxCos14Calculator;
 using gfac::ApproxCos10Calculator;
+using gfac::ApproxCos14CalculatorPre;
+using gfac::IdentityCalculator;
+
+
 
 
 template <typename GeneratorT>
@@ -62,16 +66,25 @@ void do_all_regular_benches(size_t chunk_size, size_t n_oscs) {
         &bench, "Phase-to-Amplitude Simple Double", chunk_size, n_oscs
     );
 
+    do_regular_bench<OscillatorBank<SineOscillator<double, double, 1,DoubleCosCalc>>>(
+        &bench, "Phase-to-Amplitude Exact Double-1", chunk_size, n_oscs
+    );
+
+     do_regular_bench<OscillatorBank<SineOscillator<double, double, 4,DoubleCosCalc>>>(
+        &bench, "Phase-to-Amplitude Exact Double-4", chunk_size, n_oscs
+    );
+
+     do_regular_bench<OscillatorBank<SineOscillator<double, double, 16,DoubleCosCalc>>>(
+        &bench, "Phase-to-Amplitude Exact Double-16", chunk_size, n_oscs
+    );
+
+
     do_regular_bench<OscillatorBank<SineOscillator<double, double_avx_t, 1,DoubleCosCalc>>>(
         &bench, "Phase-to-Amplitude Exact Double-AVX-1", chunk_size, n_oscs
     );
 
-    do_regular_bench<OscillatorBank<SineOscillator<double, double_avx_t, 2,DoubleCosCalc>>>(
-        &bench, "Phase-to-Amplitude Exact Double-AVX-2", chunk_size, n_oscs
-    );
-
-    do_regular_bench<OscillatorBank<SineOscillator<double, double_avx_t, 4, ApproxCos14Calculator>>>(
-        &bench, "Phase-to-Amplitude Approx 14-deg Double-AVX-4", chunk_size, n_oscs
+    do_regular_bench<OscillatorBank<SineOscillator<double, double_avx_t, 4,DoubleCosCalc>>>(
+        &bench, "Phase-to-Amplitude Exact Double-AVX-4", chunk_size, n_oscs
     );
 
     do_regular_bench<OscillatorBank<SineOscillator<double, double, 1, ApproxCos10Calculator>>>(
@@ -82,7 +95,6 @@ void do_all_regular_benches(size_t chunk_size, size_t n_oscs) {
         &bench, "Phase-to-Amplitude Approx 10-deg Double-16", chunk_size, n_oscs
     );
 
-
     do_regular_bench<OscillatorBank<SineOscillator<double, double_avx_t, 1, ApproxCos10Calculator>>>(
         &bench, "Phase-to-Amplitude Approx 10-deg Double-AVX-1", chunk_size, n_oscs
     );
@@ -91,14 +103,21 @@ void do_all_regular_benches(size_t chunk_size, size_t n_oscs) {
         &bench, "Phase-to-Amplitude Approx 10-deg Double-AVX-4", chunk_size, n_oscs
     );
 
-    do_regular_bench<OscillatorBank<SineOscillator<double, double_avx_t, 16, ApproxCos10Calculator>>>(
-        &bench, "Phase-to-Amplitude Approx 10-deg Double-AVX-16", chunk_size, n_oscs
+    do_regular_bench<OscillatorBank<SineOscillator<double, double_avx_t, 4, ApproxCos14Calculator>>>(
+        &bench, "Phase-to-Amplitude Approx 14-deg Double-AVX-4", chunk_size, n_oscs
     );
 
+    do_regular_bench<OscillatorBank<SineOscillator<double, double_avx_t, 4, IdentityCalculator>>>(
+        &bench, "Phase-to-Amplitude Identity 14-deg Double-AVX-4", chunk_size, n_oscs
+    );
 }
  
+
+
+
 int main() {
-    cout << "Hello World!\n";  
+    gfac::initialize_pre_cos_coefs(gfac::pre_cos_coefs<double_avx_t>);
+    cout << "Hello World!\n" << gfac::approx_cos_deg_14_pre(gfac::pre_cos_coefs<double_avx_t>[0]) ;  
 
     do_all_regular_benches(50000, 1);
     // do_all_regular_benches(1024, 1);

@@ -6,6 +6,7 @@
 #include <iterator>
 #include <sstream>
 #include <stdexcept>
+#include <array>
 
 #include "common.hpp"
 
@@ -75,6 +76,13 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
         template <typename operand_type>
         static inline operand_type cos(const operand_type& x) {
             return approx_cos_deg_14(x);
+        }
+    };
+
+    struct ApproxCos14CalculatorPre {
+        template <typename operand_type>
+        static inline operand_type cos(const operand_type& x) {
+            return approx_cos_deg_14_pre(x);
         }
     };
 
@@ -340,6 +348,50 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
             }
         // public
     };
+/*
+    template <typename sample_type, typename operand_type, std::size_t n_operands_per_block> 
+    struct ApproxSineOscillator : public SineOscillator {
+        std::array<operand_type, 8> coefs;
+
+         SineOscillator() : SineOscillator(sample_type(0), sample_type(0), sample_type(0)) {}
+
+        SineOscillator(sample_type freq, sample_type ampl, sample_type phase) :
+            freq(freq),
+            ampl_operand(ampl),
+            delta_phase_per_block(wrap_phase_offset(tau<sample_type>() * freq * this->n_samples_per_block)),
+            phase_block(SineOscillator::new_phase_block(freq, phase)),
+            osc_block(SineOscillator::new_osc_block(freq, ampl, phase)),
+            osc_block_safe_end_it(osc_block.begin() + n_samples_per_block),
+            osc_block_safe_begin_it(osc_block.begin() + n_samples_per_operand),
+            osc_block_it(osc_block.begin()+n_samples_per_operand)
+        {}
+
+        ApproxSineOscillator() : ApproxSineOscillator(sample_type(0), sample_type(0), sample_type(0)) {}
+
+        ApproxSineOscillator(sample_type freq, sample_type ampl, sample_type phase) : SineOscillator(sample_type freq, sample_type ampl, sample_type phase) {
+            this-coefs = {
+                coefs[0] = operand_type(0x1.ffffffff470fdp-1);
+                coefs[1] = operand_type(-0x1.ffffffec1c40dp-2);
+                coefs[2] = operand_type(0x1.555553f050eb2p-5);
+                coefs[3] = operand_type(-0x1.6c169b776ec06p-10);
+                coefs[4] = operand_type(0x1.a0160ea01af9bp-16);
+                coefs[5] = operand_type(-0x1.27abf550a036ap-22);
+                coefs[6] = operand_type(0x1.1b5c0b8055789p-29);
+                coefs[7] = operand_type(-0x1.577f9d3aa99cep-37); 
+            }
+        }
+
+        static inline void update_osc_operand(sample_type* osc_ptr, const sample_type* phase_ptr, const operand_type& ampl_operand) {
+            operand_type osc_operand;
+            operand_type phase_operand;
+            load(phase_ptr, phase_operand); 
+            osc_operand  = ampl_operand * approx_x2_deg_14(this->coefs, phase_operand);
+            store(osc_ptr, osc_operand);
+        }
+    };
+*/
 }}
+
+
 
 #endif

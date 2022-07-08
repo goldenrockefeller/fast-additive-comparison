@@ -2,6 +2,7 @@
 #define GOLDENROCEKEFELLER_FAST_ADDITIVE_COMPARISON_CONSTANTS_HPP
 
 #include <cmath>
+#include <array>
 #include "xsimd/xsimd.hpp"
 
 namespace goldenrockefeller{ namespace fast_additive_comparison{
@@ -110,6 +111,60 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
 		operand.store_unaligned(ptr);
 	}
 
+/*
+    template <typename operand_type>
+    struct PreCosCoefs {
+        static std::array<operand_type, 8> coefs;
+    };
+
+    template <typename operand_type>
+    void initialize_PreCosCoefs () {
+        PreCosCoefs<operand_type>::coefs = {
+            operand_type(0x1.ffffffff470fdp-1),
+            operand_type(-0x1.ffffffec1c40dp-2),
+            operand_type(0x1.555553f050eb2p-5),
+            operand_type(-0x1.6c169b776ec06p-10),
+            operand_type(0x1.a0160ea01af9bp-16),
+            operand_type(-0x1.27abf550a036ap-22),
+            operand_type(0x1.1b5c0b8055789p-29),
+            operand_type(-0x1.577f9d3aa99cep-37)
+        };
+    }
+*/
+
+    template <typename operand_type>
+    std::array<operand_type, 8> pre_cos_coefs;
+    
+    template <typename operand_type>
+    void initialize_pre_cos_coefs(std::array<operand_type, 8>& coefs) {
+        coefs = {
+            operand_type(0x1.ffffffff470fdp-1),
+            operand_type(-0x1.ffffffec1c40dp-2),
+            operand_type(0x1.555553f050eb2p-5),
+            operand_type(-0x1.6c169b776ec06p-10),
+            operand_type(0x1.a0160ea01af9bp-16),
+            operand_type(-0x1.27abf550a036ap-22),
+            operand_type(0x1.1b5c0b8055789p-29),
+            operand_type(-0x1.577f9d3aa99cep-37)
+        };
+    }
+
+    template <typename operand_type>
+    inline operand_type approx_cos_deg_14_pre(const operand_type& x) {
+        // TODO replace with FMA
+
+        // ((C0 + C2 x2) + (C4 + c6 x2) x4) + ((C8 + C10 x2) + (C12 + c14 x2) x4) x8
+        // ((coefs[0] + coefs[1] x2) + (coefs[2] + coefs[3] x2) x4) + ((coefs[4] + coefs[5] x2) + (coefs[6] + coefs[7] x2) x4) x8
+
+        auto x2 = x * x;
+        auto x4 = x2 * x2;
+        auto x8 = x4 * x4;
+        return ((pre_cos_coefs<operand_type>[0] + pre_cos_coefs<operand_type>[1] * x2) +
+         (pre_cos_coefs<operand_type>[2] + pre_cos_coefs<operand_type>[3] * x2) * x4) + 
+         ((pre_cos_coefs<operand_type>[4] + pre_cos_coefs<operand_type>[5] * x2) +
+          (pre_cos_coefs<operand_type>[6] + pre_cos_coefs<operand_type>[7] * x2) * x4) * x8;
+    }
+
     template <typename operand_type>
     inline operand_type approx_cos_deg_14(const operand_type& x) {
         // TODO replace with FMA
@@ -127,14 +182,9 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
 
         auto x2 = x * x;
         auto x4 = x2 * x2;
-        auto v_c0_c2 = c0 + c2 * x2;
-        auto v_c4_c6 = c4 + c6 * x2;
         auto x8 = x4 * x4;
-        auto v_c0_c6 = v_c0_c2 + v_c4_c6 * x4;
-        auto v_c8_c10 = c8 + c10 * x2;
-        auto v_c12_c14 = c12 + c14 * x2;
-        auto v_c8_c14 = v_c8_c10 + v_c12_c14 * x4;
-        return v_c0_c6 + v_c8_c14 * x8;
+        return ((c0 + c2 * x2) + (c4 + c6 *x2)* x4) + ((c8 + c10* x2) + (c12 + c14 *x2) *x4) *x8;
+        
     }
 
     template <typename operand_type>
@@ -152,12 +202,8 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
 
         auto x2 = x * x;
         auto x4 = x2 * x2;
-        auto v_c0_c2 = c0 + c2 * x2;
-        auto v_c4_c6 = c4 + c6 * x2;
         auto x8 = x4 * x4;
-        auto v_c0_c6 = v_c0_c2 + v_c4_c6 * x4;
-        auto v_c8_c10 = c8 + c10 * x2;
-        return v_c0_c6 + v_c8_c10 * x8;
+        return ((c0 + c2 * x2) + (c4 + c6 *x2)* x4) + (c8 + c10* x2) *x8;
     }
 }}
 
