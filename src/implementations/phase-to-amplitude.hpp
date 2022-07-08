@@ -101,6 +101,35 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
         }
     };
 
+
+    #include "lookup_table.h"
+    
+    template <typename sample_type>
+    sample_type lookup_cos (const sample_type& x) {
+        constexpr double step_size = 1024. / tau<sample_type>();
+        return lookup_table[ size_t( (x + (x < 0.) * tau<sample_type>()) * step_size)];
+    }
+
+    template <typename sample_type>
+    struct LookupCalculator {
+        template <typename operand_type>
+        static inline operand_type cos(const operand_type& x) {
+            static_assert(sizeof(operand_type) >= sizeof(sample_type), "The operand type size must be the same size as sample type");
+            static_assert((sizeof(operand_type) % sizeof(sample_type)) == 0, "The operand type size must be a multiple of size as sample type");
+
+            static constexpr size_t n_samples_per_operand = sizeof(operand_type) / sizeof(sample_type);
+
+            operand_type y;
+            const sample_type* x_ptr = reinterpret_cast<const sample_type*>(&x);
+            sample_type* y_ptr = reinterpret_cast<sample_type*>(&y);
+
+            for (size_t i = 0; i < n_samples_per_operand; i++) {
+                y_ptr[i] = lookup_cos(sample_type(x_ptr[i]));
+            }
+            return y;
+        }
+    };
+
     template <typename sample_type, typename operand_type, std::size_t n_operands_per_block, typename CosineCalculatorT> 
     class SineOscillator{
         static_assert(sizeof(operand_type) >= sizeof(sample_type), "The operand type size must be the same size as sample type");

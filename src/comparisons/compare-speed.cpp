@@ -28,6 +28,7 @@ using gfac::SimpleExactSineOscillator;
 using gfac::SineOscillator;
 using FloatCosCalc = gfac::ExactCosineCalculator<float>;
 using DoubleCosCalc = gfac::ExactCosineCalculator<double>;
+using LookupDoubleCosCalc = gfac::LookupCalculator<double>;
 using gfac::ApproxCos14Calculator;
 using gfac::ApproxCos10Calculator;
 using gfac::ApproxCos14CalculatorPre;
@@ -78,6 +79,10 @@ void do_all_regular_benches(size_t chunk_size, size_t n_oscs) {
         &bench, "Phase-to-Amplitude Exact Double-16", chunk_size, n_oscs
     );
 
+    do_regular_bench<OscillatorBank<SineOscillator<double, double_avx_t, 4, IdentityCalculator>>>(
+        &bench, "Phase-to-Amplitude Identity Double-AVX-4", chunk_size, n_oscs
+    );
+
 
     do_regular_bench<OscillatorBank<SineOscillator<double, double_avx_t, 1,DoubleCosCalc>>>(
         &bench, "Phase-to-Amplitude Exact Double-AVX-1", chunk_size, n_oscs
@@ -107,8 +112,8 @@ void do_all_regular_benches(size_t chunk_size, size_t n_oscs) {
         &bench, "Phase-to-Amplitude Approx 14-deg Double-AVX-4", chunk_size, n_oscs
     );
 
-    do_regular_bench<OscillatorBank<SineOscillator<double, double_avx_t, 4, IdentityCalculator>>>(
-        &bench, "Phase-to-Amplitude Identity 14-deg Double-AVX-4", chunk_size, n_oscs
+    do_regular_bench<OscillatorBank<SineOscillator<double, double_avx_t, 4,LookupDoubleCosCalc>>>(
+        &bench, "Phase-to-Amplitude Lookup Double-AVX-4", chunk_size, n_oscs
     );
 }
  
