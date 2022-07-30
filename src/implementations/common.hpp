@@ -63,7 +63,7 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
     inline T wrap_phase_offset(const T& phase) {
         
         
-        /* Wrap phase between 0, and 2 * pi, but raw phase must be between -pi and 3 * pi */
+        /* Wrap phase between 0, and 2 * pi */
         return phase - floor(phase * inv_tau<T>()) * tau<T>();
     } 
 
@@ -110,60 +110,6 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
 	inline void store<double, xsimd::batch<double, xsimd::avx>>(double* ptr, const xsimd::batch<double, xsimd::avx>& operand) {
 		operand.store_unaligned(ptr);
 	}
-
-/*
-    template <typename operand_type>
-    struct PreCosCoefs {
-        static std::array<operand_type, 8> coefs;
-    };
-
-    template <typename operand_type>
-    void initialize_PreCosCoefs () {
-        PreCosCoefs<operand_type>::coefs = {
-            operand_type(0x1.ffffffff470fdp-1),
-            operand_type(-0x1.ffffffec1c40dp-2),
-            operand_type(0x1.555553f050eb2p-5),
-            operand_type(-0x1.6c169b776ec06p-10),
-            operand_type(0x1.a0160ea01af9bp-16),
-            operand_type(-0x1.27abf550a036ap-22),
-            operand_type(0x1.1b5c0b8055789p-29),
-            operand_type(-0x1.577f9d3aa99cep-37)
-        };
-    }
-*/
-
-    template <typename operand_type>
-    std::array<operand_type, 8> pre_cos_coefs;
-    
-    template <typename operand_type>
-    void initialize_pre_cos_coefs(std::array<operand_type, 8>& coefs) {
-        coefs = {
-            operand_type(0x1.ffffffff470fdp-1),
-            operand_type(-0x1.ffffffec1c40dp-2),
-            operand_type(0x1.555553f050eb2p-5),
-            operand_type(-0x1.6c169b776ec06p-10),
-            operand_type(0x1.a0160ea01af9bp-16),
-            operand_type(-0x1.27abf550a036ap-22),
-            operand_type(0x1.1b5c0b8055789p-29),
-            operand_type(-0x1.577f9d3aa99cep-37)
-        };
-    }
-
-    template <typename operand_type>
-    inline operand_type approx_cos_deg_14_pre(const operand_type& x) {
-        // TODO replace with FMA
-
-        // ((C0 + C2 x2) + (C4 + c6 x2) x4) + ((C8 + C10 x2) + (C12 + c14 x2) x4) x8
-        // ((coefs[0] + coefs[1] x2) + (coefs[2] + coefs[3] x2) x4) + ((coefs[4] + coefs[5] x2) + (coefs[6] + coefs[7] x2) x4) x8
-
-        auto x2 = x * x;
-        auto x4 = x2 * x2;
-        auto x8 = x4 * x4;
-        return ((pre_cos_coefs<operand_type>[0] + pre_cos_coefs<operand_type>[1] * x2) +
-         (pre_cos_coefs<operand_type>[2] + pre_cos_coefs<operand_type>[3] * x2) * x4) + 
-         ((pre_cos_coefs<operand_type>[4] + pre_cos_coefs<operand_type>[5] * x2) +
-          (pre_cos_coefs<operand_type>[6] + pre_cos_coefs<operand_type>[7] * x2) * x4) * x8;
-    }
 
     template <typename operand_type>
     inline operand_type approx_cos_deg_14(const operand_type& x) {
