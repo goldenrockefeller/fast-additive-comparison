@@ -7,6 +7,7 @@
 #include "nanobench.h"
 #include "../implementations/phase-to-amplitude.hpp"
 #include "../implementations/oscillator-bank.hpp"
+#include "../implementations/recursive.hpp"
 #include "xsimd/xsimd.hpp"
 
 namespace xs = xsimd;
@@ -31,7 +32,6 @@ using DoubleCosCalc = gfac::ExactCosineCalculator<double>;
 using LookupDoubleCosCalc = gfac::LookupCalculator<double>;
 using gfac::ApproxCos14Calculator;
 using gfac::ApproxCos10Calculator;
-using gfac::ApproxCos14CalculatorPre;
 using gfac::IdentityCalculator;
 
 
@@ -62,6 +62,8 @@ void do_all_regular_benches(size_t chunk_size, size_t n_oscs) {
     ostringstream title_stream;
     title_stream << "All Regular Bench. Chunck Size: " << chunk_size << "; Num of Oscs: " << n_oscs;
     bench.title(title_stream.str());
+
+    bench.minEpochIterations(100);
 
     do_regular_bench<OscillatorBank<SimpleExactSineOscillator<double>>>(
         &bench, "Phase-to-Amplitude Simple Double", chunk_size, n_oscs
@@ -115,14 +117,17 @@ void do_all_regular_benches(size_t chunk_size, size_t n_oscs) {
     do_regular_bench<OscillatorBank<SineOscillator<double, double_avx_t, 4,LookupDoubleCosCalc>>>(
         &bench, "Phase-to-Amplitude Lookup Double-AVX-4", chunk_size, n_oscs
     );
+
+    do_regular_bench<OscillatorBank<gfac::MagicCircleOscillator<double, double_avx_t, 4>>>(
+        &bench, "Recursive Double-AVX-4", chunk_size, n_oscs
+    );
+    
 }
  
 
 
 
 int main() {
-    gfac::initialize_pre_cos_coefs(gfac::pre_cos_coefs<double_avx_t>);
-    cout << "Hello World!\n" << gfac::approx_cos_deg_14_pre(gfac::pre_cos_coefs<double_avx_t>[0]) ;  
 
     do_all_regular_benches(50000, 1);
     // do_all_regular_benches(1024, 1);

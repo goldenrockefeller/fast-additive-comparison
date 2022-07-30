@@ -7,6 +7,7 @@
 
 #include "../implementations/common.hpp"
 #include "../implementations/phase-to-amplitude.hpp"
+#include "../implementations/recursive.hpp"
 
 #include "xsimd/xsimd.hpp"
 
@@ -32,6 +33,8 @@ using gfac::tau;
 using FloatCosCalc = gfac::ExactCosineCalculator<float>;
 using DoubleCosCalc = gfac::ExactCosineCalculator<double>;
 using gfac::ApproxCos10Calculator;
+
+using LookupDoubleCosCalc = gfac::LookupCalculator<double>;
 
 template<typename T>
 T clamp(T v, T lo, T hi) {
@@ -109,7 +112,6 @@ struct LeastSquaresSinCosModel {
 };
 
 
-    
 AmplitudeAccuracyRecord amplitude_accuracy_for_slice(
     vector<double>::const_iterator signal_it,  
     const LeastSquaresSinCosModel& sin_cos_model,
@@ -223,7 +225,6 @@ AnalysisResult oscillator_analysis(const vector<double>& freqs, size_t analysis_
         oscillator.progress_and_add(raw_oscillator_signal.begin(), raw_oscillator_signal.end());
 
         vector<double> signal(analysis_len);
-
         for (size_t i = 0; i < analysis_len; i++) {
             signal[i] = double(raw_oscillator_signal[i]);
         }
@@ -256,13 +257,16 @@ AnalysisResult oscillator_analysis(const vector<double>& freqs, size_t analysis_
 
 int main() {
 
-    vector<double> freqs(10);
+    vector<double> freqs(15);
 
     for(size_t i = 0; i < freqs.size(); i++) {
         freqs[i] = 0.45 / exp2(double(i));
     }
+    
 
-    auto result = oscillator_analysis<gfac::SineOscillator<double, double_avx_t, 2,ApproxCos10Calculator>>(freqs, 50000);
+    auto result = oscillator_analysis<gfac::MagicCircleOscillator<double, double_avx_t, 4>>(freqs, 50000);
+    
+    // auto result = oscillator_analysis<gfac::SimpleExactSineOscillator<double>>(freqs, 50000);
 
     cout << "SNR (db): " << result.worst_snr_record.snr_db << " at " << result.worst_snr_record.freq << " cycles/sample \n"; 
     cout << "Absolute Gain (db): " << result.worst_abs_gain_record.abs_gain_db << " at " << result.worst_abs_gain_record.freq << " cycles/sample \n"; 
