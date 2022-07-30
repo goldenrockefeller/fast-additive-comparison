@@ -35,47 +35,24 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
 
         vector_type co_osc_block;
 
-        static inline void progress_phase_operand(sample_type* phase_ptr, const operand_type& delta_phase_per_block) {
-            operand_type phase_operand;
-            load(phase_ptr, phase_operand);
-            phase_operand += delta_phase_per_block;
-            phase_operand = wrap_phase_bounded(phase_operand);
-            store(phase_ptr, phase_operand);
-        }
-
-        static inline void set_osc_operand(sample_type* osc_ptr, const sample_type* phase_ptr, const operand_type& ampl_operand) {
+        static inline void set_osc_operand(sample_type& osc_ref, const sample_type& phase_ref, const operand_type& ampl_operand) {
             operand_type osc_operand;
             operand_type phase_operand;
-            load(phase_ptr, phase_operand); 
+            load(&phase_ref, phase_operand); 
             osc_operand  = ampl_operand * approx_cos_deg_14(phase_operand);
-            store(osc_ptr, osc_operand);
+            store(&osc_ref, osc_operand);
         }
     
-        static inline void progress_osc_operand(sample_type* osc_ptr, sample_type* co_osc_ptr, const operand_type& osc_block_param) {
+        static inline void progress_osc_operand(sample_type& osc_ref, sample_type& co_osc_ref, const operand_type& osc_block_param) {
             operand_type osc_operand;
             operand_type co_osc_operand;
-            load(osc_ptr, osc_operand); 
-            load(co_osc_ptr, co_osc_operand); 
+            load(&osc_ref, osc_operand); 
+            load(&co_osc_ref, co_osc_operand); 
             osc_operand  = osc_operand - osc_block_param * co_osc_operand; 
             co_osc_operand  = co_osc_operand + osc_block_param * osc_operand; 
-            store(osc_ptr, osc_operand);
-            store(co_osc_ptr, co_osc_operand); 
+            store(&osc_ref, osc_operand);
+            store(&co_osc_ref, co_osc_operand); 
         }
-
-        template <size_t N>
-        struct UpdateOscLoop{
-            static inline void update(vector_type& osc_block, vector_type& co_osc_block, const operand_type& osc_block_param) {
-                MagicCircleOscillator::progress_osc_operand(&osc_block[N * N_SAMPLES_PER_OPERAND], &co_osc_block[N * N_SAMPLES_PER_OPERAND], osc_block_param);
-                UpdateOscLoop<N-1>::update(osc_block, co_osc_block, osc_block_param);
-            }
-        };
-
-        template <>
-        struct UpdateOscLoop<1> {
-            static inline void update(vector_type& osc_block, vector_type& co_osc_block, const operand_type& osc_block_param) {
-                MagicCircleOscillator::progress_osc_operand(&osc_block[N_SAMPLES_PER_OPERAND], &co_osc_block[N_SAMPLES_PER_OPERAND], osc_block_param);
-            }
-        };
     
         public:
             typedef sample_type sample_type;
@@ -129,8 +106,8 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
 
                 for (size_t i = 0; i < N_SAMPLES_PER_BLOCK; i += N_SAMPLES_PER_OPERAND) {
                     MagicCircleOscillator::set_osc_operand(
-                        &osc_block[i + N_SAMPLES_PER_OPERAND], 
-                        &phase_block[i],
+                        osc_block[i + N_SAMPLES_PER_OPERAND], 
+                        phase_block[i],
                         ampl_operand
                     );
                 }
@@ -167,8 +144,8 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
 
                 for (size_t i = 0; i < N_SAMPLES_PER_BLOCK; i += N_SAMPLES_PER_OPERAND) {
                     MagicCircleOscillator::set_osc_operand(
-                        &this->osc_block[i + N_SAMPLES_PER_OPERAND], 
-                        &this->co_osc_block[+ N_SAMPLES_PER_OPERAND],
+                        this->osc_block[i + N_SAMPLES_PER_OPERAND], 
+                        this->co_osc_block[+ N_SAMPLES_PER_OPERAND],
                         this->osc_block_param
                     );
                 }

@@ -154,20 +154,20 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
         vector_iterator_type osc_block_safe_end_it;
         vector_iterator_type osc_block_safe_begin_it;
 
-        static inline void progress_phase_operand(sample_type* phase_ptr, const operand_type& delta_phase_per_block) {
+        static inline void progress_phase_operand(sample_type& phase_ref, const operand_type& delta_phase_per_block) {
             operand_type phase_operand;
-            load(phase_ptr, phase_operand);
+            load(&phase_ref, phase_operand);
             phase_operand += delta_phase_per_block;
             phase_operand = wrap_phase_bounded(phase_operand);
-            store(phase_ptr, phase_operand);
+            store(&phase_ref, phase_operand);
         }
 
-        static inline void update_osc_operand(sample_type* osc_ptr, const sample_type* phase_ptr, const operand_type& ampl_operand) {
+        static inline void update_osc_operand(sample_type& osc_ref, const sample_type& phase_ref, const operand_type& ampl_operand) {
             operand_type osc_operand;
             operand_type phase_operand;
-            load(phase_ptr, phase_operand); 
+            load(&phase_ref, phase_operand); 
             osc_operand  = ampl_operand * CosineCalculatorT::cos(phase_operand);
-            store(osc_ptr, osc_operand);
+            store(&osc_ref, osc_operand);
         }
 
     
@@ -224,8 +224,8 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
 
                 for (size_t i = 0; i < N_SAMPLES_PER_BLOCK; i += N_SAMPLES_PER_OPERAND) {
                     SineOscillator::update_osc_operand(
-                        &osc_block[i + N_SAMPLES_PER_OPERAND], 
-                        &phase_block[i],
+                        osc_block[i + N_SAMPLES_PER_OPERAND], 
+                        phase_block[i],
                         ampl_operand
                     );
                 }
@@ -259,15 +259,15 @@ namespace goldenrockefeller{ namespace fast_additive_comparison{
 
             void progress_phase_block() {
                 for (size_t i = 0; i < N_SAMPLES_PER_BLOCK; i += N_SAMPLES_PER_OPERAND) {
-                    SineOscillator::progress_phase_operand(&this->phase_block[i], this->delta_phase_per_block);
+                    SineOscillator::progress_phase_operand(this->phase_block[i], this->delta_phase_per_block);
                 }
             }
 
             void update_osc_block() {
                 for (size_t i = 0; i < N_SAMPLES_PER_BLOCK; i += N_SAMPLES_PER_OPERAND) {
                     SineOscillator::update_osc_operand(
-                        &this->osc_block[i + N_SAMPLES_PER_OPERAND], 
-                        &this->phase_block[i],
+                        this->osc_block[i + N_SAMPLES_PER_OPERAND], 
+                        this->phase_block[i],
                         this->ampl_operand
                     );
                 }
